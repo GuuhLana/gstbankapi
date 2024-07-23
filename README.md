@@ -1,4 +1,4 @@
-# HDSysBank USJT🚀
+# GTechSystemBank USJT🚀
 Este projeto consiste no desenvolvimento de uma aplicação similar a um sistema bancário, permitindo realizar operações bancárias básicas. Também foi implementado uma visualização de extratos e um barramento de eventos que estará monitorando todas as operações realizadas na API. Este projeto faz parte de um trabalho acadêmico para o curso de Sistemas de Informação, especificamente na UC de Sistemas Distribuídos e Mobile. O objetivo é demonstrar a aplicação de conceitos aprendidos durante o curso, tais como desenvolvimento de APIs REST, persistência de dados, e monitoramento de eventos em sistemas distribuídos.
 
 ## Funcionalidades: ⭐
@@ -46,12 +46,12 @@ application.properties exemplo:
 
     Se preferir, conteúdo do arquivo abaixo:
     
-        INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('01', '01', '1000', 'Beatriz Biagioni dos Santos');
-        INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('01', '02', '1000', 'Erick de Sousa Cavalcante');
-        INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('02', '01', '1000', 'Eduarda Ferreira Galeno');
+        INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('01', '01', '1000', 'Luna Pereira Silva');
+        INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('01', '02', '1000', 'Sandro de Sousa Flores');
+        INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('02', '01', '1000', 'Eduarda Pereira Lins');
         INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('02', '02', '1000', 'Gustavo de Lana Rocha');
-        INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('03', '01', '1000', 'Julia Garcia Menezes');
-        INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('03', '02', '1000', 'Ygor Brancaglione Cuchi');
+        INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('03', '01', '1000', 'Ruan Mendes do Nascimento');
+        INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('03', '02', '1000', 'Hiago Lima Junior');
 
 ## Hora dos testes? 🛠️
 Para testar as requisições, recomendamos utilizar o POSTMAN ou qualquer outra ferramenta similar de teste de APIs.
