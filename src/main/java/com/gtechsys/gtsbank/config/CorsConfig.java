@@ -19,6 +19,7 @@ public class CorsConfig {
 
 		List<String> origins = new ArrayList<>();
 		origins.add("http://localhost:4200");
+		origins.add("https://gstbankfront.vercel.app");
 
 		config.setAllowedOrigins(origins);
 		config.addAllowedHeader("*");
