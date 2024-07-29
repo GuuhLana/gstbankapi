@@ -30,9 +30,9 @@ application.properties exemplo:
 
     #Banco de dados POSTGRES
     spring.datasource.driver-class-name=org.postgresql.Driver
-    spring.datasource.url=jdbc:postgresql://localhost:5432/hdsysbank
-    spring.datasource.username=postgres
-    spring.datasource.password=1234321
+    spring.datasource.url=jdbc:postgresql://localhost:5432/[NOME_DO_PROJETO]
+    spring.datasource.username=[SEU_USERNAME]
+    spring.datasource.password=[SUA_SENHA]
     spring.jpa.hibernate.ddl-auto=update
 
 3. Certifique-se de ter todas as dependências necessárias instaladas e configuradas corretamente. Para isso, você pode utilizar o Maven para gerenciar as dependências do projeto.
