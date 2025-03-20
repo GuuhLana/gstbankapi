@@ -47,7 +47,6 @@ public class ContaService {
 		Optional<Conta> contaOrigem = contaRepository.findByNumeroAndAgencia(numeroContaOrigem, numeroAgenciaOrigem);
 		Optional<Conta> contaDestino = contaRepository.findByNumeroAndAgencia(numeroContaDestino, numeroAgenciaDestino);
 
-		// Calcula a taxa de 1%
 		double taxa = valor * 0.01;
 
 		if (verificaSaldoTransferencia(contaOrigem, valor)) {
@@ -60,13 +59,11 @@ public class ContaService {
 				contaRepository.save(contaOrigem.get());
 				contaRepository.save(contaDestino.get());
 
-				// Cria e salva o extrato da operação
 				Extrato log = new Extrato(contaOrigem.get().getNumero(), contaOrigem.get().getAgencia(),
 						contaDestino.get().getNumero(), contaDestino.get().getAgencia(),
 						Calendar.getInstance().getTime(), valor);
 				extratoRepository.save(log);
 
-				// Criando e salvando um evento de transferencia
 				String eventoMessage = "O titular: " + contaOrigem.get().getTitular()
 						+ " realizou uma transferencia no valor de: " + valor + " para a conta do titular: "
 						+ contaDestino.get().getTitular();

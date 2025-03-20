@@ -1,6 +1,8 @@
 package com.gtechsys.gtsbank.controller;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -65,13 +67,17 @@ public class ContaController {
 
 	@Operation(summary = "Transfere valores entre contas")
 	@PostMapping(path = "/transferir")
-	public ResponseEntity<String> transferir(@RequestBody TransferenciaRequest request) {
+	public ResponseEntity<Map<String, String>> transferir(@RequestBody TransferenciaRequest request) {
 		try {
 			contaService.transferir(request.getContaOrigemNumero(), request.getContaOrigemAgencia(),
 					request.getContaDestinoNumero(), request.getContaDestinoAgencia(), request.getValor());
-			return new ResponseEntity<String>("Transferencia realizada com sucesso", HttpStatus.OK);
+			Map<String, String> response = new HashMap<>();
+			response.put("message", "Transferência realizada com sucesso");
+			return new ResponseEntity<>(response, HttpStatus.OK);
 		} catch (Exception e) {
-			return new ResponseEntity<String>(e.getMessage(), HttpStatus.BAD_REQUEST);
+			Map<String, String> response = new HashMap<>();
+			response.put("message", e.getMessage());
+			return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
 		}
 	}
 
