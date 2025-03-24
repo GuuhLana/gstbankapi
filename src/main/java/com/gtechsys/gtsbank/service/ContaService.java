@@ -3,8 +3,9 @@ package com.gtechsys.gtsbank.service;
 import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.List;
-import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,131 +21,127 @@ import com.gtechsys.gtsbank.repository.ExtratoRepository;
 @Service
 public class ContaService {
 
-	@Autowired
-	private ContaRepository contaRepository;
+    private static final Logger logger = LoggerFactory.getLogger(ContaService.class);
 
-	@Autowired
-	private ExtratoRepository extratoRepository;
+    @Autowired
+    private ContaRepository contaRepository;
 
-	@Autowired
-	private EventoRepository eventoRepository;
+    @Autowired
+    private ExtratoRepository extratoRepository;
 
-	public SaldoResponse verificarSaldo(Integer numeroConta, Integer numeroAgencia) {
-		Optional<Conta> conta = contaRepository.findByNumeroAndAgencia(numeroConta, numeroAgencia);
-		SaldoResponse saldo = new SaldoResponse(conta.get().getNumero(), conta.get().getAgencia(),
-				conta.get().getTitular(), conta.get().getSaldo());
+    @Autowired
+    private EventoRepository eventoRepository;
 
-		return saldo;
-	}
+    public SaldoResponse verificarSaldo(Integer numeroConta, Integer numeroAgencia) {
+        logger.info("Verificando saldo da conta: Agência {}, Número {}", numeroAgencia, numeroConta);
+        Conta conta = contaRepository.findByNumeroAndAgencia(numeroConta, numeroAgencia)
+                .orElseThrow(() -> new RuntimeException("Conta não encontrada"));
+        return new SaldoResponse(conta.getNumero(), conta.getAgencia(), conta.getTitular(), conta.getSaldo());
+    }
 
-	public List<Conta> verificarContas() {
-		List<Conta> contas = contaRepository.findAll();
-		return contas;
-	}
+    public List<Conta> verificarContas() {
+        logger.info("Listando todas as contas");
+        return contaRepository.findAll();
+    }
 
-	public void transferir(Integer numeroContaOrigem, Integer numeroAgenciaOrigem, Integer numeroContaDestino,
-			Integer numeroAgenciaDestino, double valor) {
-		Optional<Conta> contaOrigem = contaRepository.findByNumeroAndAgencia(numeroContaOrigem, numeroAgenciaOrigem);
-		Optional<Conta> contaDestino = contaRepository.findByNumeroAndAgencia(numeroContaDestino, numeroAgenciaDestino);
+    public void transferir(Integer numeroContaOrigem, Integer numeroAgenciaOrigem, Integer numeroContaDestino,
+                           Integer numeroAgenciaDestino, double valor) {
+        logger.info("Iniciando transferência: Origem Agência {}, Número {} -> Destino Agência {}, Número {}, Valor {}",
+                numeroAgenciaOrigem, numeroContaOrigem, numeroAgenciaDestino, numeroContaDestino, valor);
 
-		double taxa = valor * 0.01;
+        if (valor <= 0) {
+            throw new IllegalArgumentException("Valor da transferência deve ser positivo");
+        }
 
-		if (verificaSaldoTransferencia(contaOrigem, valor)) {
-			if (contaOrigem.get().getSaldo() >= valor) {
-				double valorTaxado = valor - taxa;
+        Conta contaOrigem = contaRepository.findByNumeroAndAgencia(numeroContaOrigem, numeroAgenciaOrigem)
+                .orElseThrow(() -> new RuntimeException("Conta de origem não encontrada"));
+        Conta contaDestino = contaRepository.findByNumeroAndAgencia(numeroContaDestino, numeroAgenciaDestino)
+                .orElseThrow(() -> new RuntimeException("Conta de destino não encontrada"));
 
-				contaOrigem.get().transferir(valor);
-				contaDestino.get().receberTransferencia(valorTaxado);
+        if (contaOrigem.getSaldo() < valor) {
+            logger.warn("Saldo insuficiente na conta de origem: Agência {}, Número {}", numeroAgenciaOrigem, numeroContaOrigem);
+            throw new RuntimeException("Saldo insuficiente para transferência");
+        }
 
-				contaRepository.save(contaOrigem.get());
-				contaRepository.save(contaDestino.get());
+        double taxa = valor * 0.01;
+        double valorTaxado = valor - taxa;
 
-				Extrato log = new Extrato(contaOrigem.get().getNumero(), contaOrigem.get().getAgencia(),
-						contaDestino.get().getNumero(), contaDestino.get().getAgencia(),
-						Calendar.getInstance().getTime(), valor);
-				extratoRepository.save(log);
+        contaOrigem.transferir(valor);
+        contaDestino.receberTransferencia(valorTaxado);
 
-				String eventoMessage = "O titular: " + contaOrigem.get().getTitular()
-						+ " realizou uma transferencia no valor de: " + valor + " para a conta do titular: "
-						+ contaDestino.get().getTitular();
-				Evento evento = new Evento(eventoMessage, LocalDateTime.now());
-				eventoRepository.save(evento);
+        contaRepository.save(contaOrigem);
+        contaRepository.save(contaDestino);
 
-			} else {
-				throw new RuntimeException("Não foi possivel realizar a transferencia, verifique os valores inseridos");
-			}
-		} else {
-			throw new RuntimeException("Operação Negada! Saldo Insuficiênte");
-		}
-	}
+        Extrato log = new Extrato(contaOrigem.getNumero(), contaOrigem.getAgencia(),
+                contaDestino.getNumero(), contaDestino.getAgencia(), Calendar.getInstance().getTime(), valor);
+        extratoRepository.save(log);
 
-	public ContaDto criarConta(ContaDto dto) {
-		Conta conta = dto.criarConta();
+        String eventoMessage = String.format("Transferência realizada: Titular %s -> Titular %s, Valor %s",
+                contaOrigem.getTitular(), contaDestino.getTitular(), valor);
+        Evento evento = new Evento(eventoMessage, LocalDateTime.now());
+        eventoRepository.save(evento);
 
-		boolean existeConta = contaRepository.existsByNumeroAndAgencia(conta.getNumero(), conta.getAgencia());
+        logger.info("Transferência concluída com sucesso");
+    }
 
-		if (existeConta) {
-			String eventoMessage = "Foi realizada a tentativa de criação de uma conta, porém, ja existem valores com os parâmetros fornecidos. ";
-			Evento evento = new Evento(eventoMessage, LocalDateTime.now());
-			eventoRepository.save(evento);
+    public ContaDto criarConta(ContaDto dto) {
+        logger.info("Criando nova conta: {}", dto);
+        Conta conta = dto.criarConta();
 
-			throw new RuntimeException("Já existe uma conta cadastrada na agencia: " + conta.getAgencia()
-					+ " com o número: " + conta.getNumero());
-		} else {
-			contaRepository.save(conta);
-			ContaDto contaDTO = new ContaDto(conta);
+        if (contaRepository.existsByNumeroAndAgencia(conta.getNumero(), conta.getAgencia())) {
+            String eventoMessage = "Tentativa de criação de conta com número e agência já existentes";
+            Evento evento = new Evento(eventoMessage, LocalDateTime.now());
+            eventoRepository.save(evento);
+            logger.warn(eventoMessage);
+            throw new RuntimeException("Conta já existe");
+        }
 
-			String eventoMessage = "Foi criada uma nova conta no nome de: " + conta.getTitular() + " ID: "
-					+ conta.getId();
-			Evento evento = new Evento(eventoMessage, LocalDateTime.now());
-			eventoRepository.save(evento);
+        contaRepository.save(conta);
+        String eventoMessage = String.format("Nova conta criada: Titular %s, ID %s", conta.getTitular(), conta.getId());
+        Evento evento = new Evento(eventoMessage, LocalDateTime.now());
+        eventoRepository.save(evento);
+        logger.info(eventoMessage);
 
-			return contaDTO;
-		}
-	}
+        return new ContaDto(conta);
+    }
 
-	// Adicionar extrato ao realizar um deposito na conta
-	public void depositarNaConta(Integer numeroConta, Integer numeroAgencia, double valor) {
-		Optional<Conta> conta = contaRepository.findByNumeroAndAgencia(numeroConta, numeroAgencia);
-		double saldoAtual = conta.get().getSaldo();
-		double novoSaldo = saldoAtual + valor;
+    public void depositarNaConta(Integer numeroConta, Integer numeroAgencia, double valor) {
+        logger.info("Depositando na conta: Agência {}, Número {}, Valor {}", numeroAgencia, numeroConta, valor);
 
-		conta.get().setSaldo(novoSaldo);
-		contaRepository.save(conta.get());
+        if (valor <= 0) {
+            throw new IllegalArgumentException("Valor do depósito deve ser positivo");
+        }
 
-		String eventoMessage = "Foi realizado um deposito no valor de: " + valor + " para a conta de numero: "
-				+ numeroConta + " agencia: " + numeroAgencia;
-		Evento evento = new Evento(eventoMessage, LocalDateTime.now());
-		eventoRepository.save(evento);
-	}
+        Conta conta = contaRepository.findByNumeroAndAgencia(numeroConta, numeroAgencia)
+                .orElseThrow(() -> new RuntimeException("Conta não encontrada"));
 
-	public String deletarConta(Long id) {
+        conta.setSaldo(conta.getSaldo() + valor);
+        contaRepository.save(conta);
 
-		Long idConta = id;
+        String eventoMessage = String.format("Depósito realizado: Conta %s, Agência %s, Valor %s",
+                numeroConta, numeroAgencia, valor);
+        Evento evento = new Evento(eventoMessage, LocalDateTime.now());
+        eventoRepository.save(evento);
+        logger.info(eventoMessage);
+    }
 
-		boolean existeConta = contaRepository.existsById(idConta);
+    public String deletarConta(Long id) {
+        logger.info("Deletando conta: ID {}", id);
 
-		if (existeConta) {
-			contaRepository.deleteById(idConta);
+        if (!contaRepository.existsById(id)) {
+            String eventoMessage = "Tentativa de deleção de conta inexistente";
+            Evento evento = new Evento(eventoMessage, LocalDateTime.now());
+            eventoRepository.save(evento);
+            logger.warn(eventoMessage);
+            throw new RuntimeException("Conta não existe");
+        }
 
-			String eventoMessage = "Uma conta com id: " + idConta + " foi deletada";
-			Evento evento = new Evento(eventoMessage, LocalDateTime.now());
-			eventoRepository.save(evento);
-			return "Conta deleta com sucesso";
-		} else {
-			String eventoMessage = "Foi realizada uma tentativa de deleção de uma conta não existente";
-			Evento evento = new Evento(eventoMessage, LocalDateTime.now());
-			eventoRepository.save(evento);
-			throw new RuntimeException("Conta não existe");
-		}
-	}
+        contaRepository.deleteById(id);
+        String eventoMessage = String.format("Conta deletada: ID %s", id);
+        Evento evento = new Evento(eventoMessage, LocalDateTime.now());
+        eventoRepository.save(evento);
+        logger.info(eventoMessage);
 
-	public boolean verificaSaldoTransferencia(Optional<Conta> contaOrigem, double valor) {
-		if (contaOrigem.get().getSaldo() >= valor) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-
+        return "Conta deletada com sucesso";
+    }
 }
