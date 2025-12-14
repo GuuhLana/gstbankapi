@@ -9,9 +9,13 @@ import com.gtechsys.gtsbank.entity.Conta;
 
 @Repository
 public interface ContaRepository extends JpaRepository<Conta, Long> {
-	
+
+	Optional<Conta> findByCpf(String cpf);
+
+	boolean existsByCpf(String cpf);
+
 	boolean existsByNumeroAndAgencia(Integer numero, Integer agencia);
-	
+
 	Optional<Conta> findByNumeroAndAgencia(Integer numero, Integer agencia);
-	
+
 }

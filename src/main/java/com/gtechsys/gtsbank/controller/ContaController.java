@@ -33,10 +33,10 @@ public class ContaController {
 	private ContaService contaService;
 
 	@Operation(summary = "Retorna as informações referentes a conta selecionada")
-	@GetMapping(path = "/{numeroConta}/{numeroAgencia}")
-	public ResponseEntity<?> consultarSaldo(@PathVariable Integer numeroConta, @PathVariable Integer numeroAgencia) {
+	@GetMapping(path = "/{cpf}")
+	public ResponseEntity<?> consultarSaldo(@PathVariable String cpf) {
 		try {
-			SaldoResponse saldo = contaService.verificarSaldo(numeroConta, numeroAgencia);
+			SaldoResponse saldo = contaService.verificarSaldo(cpf);
 			return new ResponseEntity<SaldoResponse>(saldo, HttpStatus.OK);
 		} catch (Exception e) {
 			return new ResponseEntity<String>(e.getMessage(), HttpStatus.BAD_REQUEST);

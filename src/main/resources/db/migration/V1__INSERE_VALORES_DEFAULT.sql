@@ -1,23 +1,48 @@
--- Insere valores iniciais para testar a API --
+-- V1__INSERE_CLIENTES_TESTE.sql
+-- Seed único com 220 contas (>= 200), nomes reais, cpf único, idade, tipo, saldo variado
 
-INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('01', '01', '1000', 'Lucas Martins Silva');
-INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('01', '02', '1000', 'Ana Paula Oliveira');
-INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('01', '03', '1000', 'Marcos Vinícius Santos');
-INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('01', '04', '1000', 'Larissa Costa Almeida');
-INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('01', '04', '1000', 'Felipe Souza Lima');
-INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('01', '05', '1000', 'Carla Beatriz Pereira');
-INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('01', '06', '1000', 'Bruno Henrique Gomes');
-INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('01', '07', '1000', 'Renata Melo Silva');
-INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('01', '08', '1000', 'Ricardo Ramos Costa');
-INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('01', '09', '1000', 'Gabriela Ferreira Lima');
-INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('01', '10', '1000', 'Thiago da Silva Oliveira');
-INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('02', '01', '1000', 'Mariana Barbosa Costa');
-INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('02', '02', '1000', 'José Carlos Souza');
-INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('02', '03', '1000', 'Amanda Ribeiro Rocha');
-INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('02', '04', '1000', 'Fernando de Oliveira');
-INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('02', '05', '1000', 'Paula Maria Fernandes');
-INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('02', '06', '1000', 'Diego Batista Gomes');
-INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('02', '07', '1000', 'Juliana Silva Santos');
-INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('02', '08', '1000', 'Rodrigo Almeida Martins');
-INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('02', '09', '1000', 'Vanessa Pereira Lopes');
-INSERT INTO tb_conta(agencia, numero, saldo, titular) VALUES ('02', '10', '1000', 'Vinícius Andrade Souza');
+WITH nomes AS (
+    SELECT
+        row_number() OVER () AS rn,
+        p1.nome || ' ' || p2.nome || ' ' || s1.sobrenome AS titular
+    FROM (VALUES
+        ('Lucas'),('Ana'),('Marcos'),('Larissa'),('Felipe'),('Carla'),('Bruno'),('Renata'),('Ricardo'),('Gabriela'),
+        ('Thiago'),('Mariana'),('José'),('Amanda'),('Fernando'),('Paula'),('Diego'),('Juliana'),('Rodrigo'),('Vanessa'),
+        ('Vinícius'),('Beatriz'),('Camila'),('Daniel'),('Eduardo'),('Letícia'),('Mateus'),('Rafael'),('Aline'),('Cristina'),
+        ('Patrícia'),('Sabrina'),('Tatiane'),('William'),('Guilherme'),('Henrique'),('Igor'),('João'),('Leonardo'),('Daniela'),
+        ('Fernanda'),('Natália'),('Sérgio'),('Roberto'),('Alexandre'),('Maurício'),('André'),('César'),('Caio'),('Vitor'),
+        ('Isabela'),('Luana'),('Michele'),('Priscila'),('Rafaela'),('Bianca'),('Bárbara'),('Helena'),('Clara'),('Luiza')
+    ) AS p1(nome)
+    CROSS JOIN (VALUES
+        ('Paulo'),('Maria'),('Clara'),('Luiza'),('Rosa'),('Aparecida'),('Helena'),('Cristiane'),('Bárbara'),('Bianca'),
+        ('Rafael'),('Henrique'),('Augusto'),('Antônio'),('Carlos'),('Júlio'),('Catarina'),('Gabriel'),('Miguel'),('Sophia'),
+        ('Daniel'),('Bruna'),('Marina'),('Vitória'),('Renato'),('Pedro'),('Isadora'),('Larissa'),('Felipe'),('Camila')
+    ) AS p2(nome)
+    CROSS JOIN (VALUES
+        ('Silva'),('Santos'),('Oliveira'),('Souza'),('Costa'),('Pereira'),('Rodrigues'),('Almeida'),('Lima'),('Gomes'),
+        ('Ribeiro'),('Carvalho'),('Rocha'),('Barbosa'),('Martins'),('Ferreira'),('Batista'),('Correia'),('Teixeira'),('Araújo'),
+        ('Melo'),('Nogueira'),('Cardoso'),('Moreira'),('Andrade'),('Freitas'),('Campos'),('Vieira'),('Monteiro'),('Mendes')
+    ) AS s1(sobrenome)
+    ORDER BY random()
+),
+base AS (
+    SELECT rn, titular
+    FROM nomes
+    LIMIT 220
+),
+contas AS (
+    SELECT
+        rn,
+        titular,
+        ((rn - 1) % 40) + 1 AS agencia,                                  -- 1..40
+        100000 + rn AS numero,                                            -- 100001..100220 (único)
+        ROUND((random() * 150000 - 5000)::numeric, 2) AS saldo,            -- -5000.00 .. 145000.00
+        (18 + floor(random() * 63))::int AS idade,                         -- 18..80
+        lpad((10000000000 + rn)::text, 11, '0') AS cpf,                    -- CPF único (11 dígitos)
+        (ARRAY['GOLD','PLATINUM','BLACK'])[(floor(random() * 3) + 1)::int] AS tipo
+    FROM base
+)
+INSERT INTO tb_conta (titular, agencia, numero, saldo, cpf, idade, tipo)
+SELECT
+    titular, agencia, numero, saldo, cpf, idade, tipo
+FROM contas;
